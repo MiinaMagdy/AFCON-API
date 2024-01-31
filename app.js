@@ -12,9 +12,7 @@ const app = express();
 
 // Middlewares
 app.use(express.json());
-app.use(cors({
-    origin: ['http://localhost:5173/']
-}));
+app.use(cors());
 
 // Routers
 app.use('/api/v1/predictions', predictionRouter);
