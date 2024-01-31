@@ -9,6 +9,6 @@ router.route('/')
     .get(predictionController.getAllPredictions)
     .post(predictionController.createPrediction);
 
-router.get('/:username', predictionController.getPredictionByUsername);
+router.get('/:email', predictionController.getPredictionByEmail);
 
 module.exports = router;
