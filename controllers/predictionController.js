@@ -1,5 +1,5 @@
 const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, getDoc, doc, getDocs, setDoc, arrayRemove } = require('firebase/firestore');
+const { getFirestore, collection, getDoc, doc, getDocs, setDoc } = require('firebase/firestore');
 const { isValidEmail } = require("../utils/validEmail");
 
 const firebaseConfig = {
@@ -18,7 +18,7 @@ exports.getAllPredictions = async (req, res) => {
     const predictionsSnap = await getDocs(collection(db, "predictions"));
     const predictions = []
     predictionsSnap.forEach((doc) => {
-        predictions.push({ email: doc.id, ...doc.data() });
+        predictions.push({ username: doc.id, ...doc.data() });
     });
     if (!predictions.length) {
         return res.status(404).json({
@@ -34,19 +34,19 @@ exports.getAllPredictions = async (req, res) => {
     });
 }
 
-exports.getPredictionByEmail = async (req, res) => {
-    if (!req.params.email || !isValidEmail(req.params.email)) {
+exports.getPredictionByUsername = async (req, res) => {
+    if (!req.params.username) {
         return res.status(400).json({
             status: "fail",
-            message: "Invalid email"
+            message: "Invalid username"
         });
     }
-    const userRef = doc(db, 'predictions', req.params.email);
+    const userRef = doc(db, 'predictions', req.params.username);
     const predictionSnap = await getDoc(userRef);
     if (!predictionSnap.exists()) {
         return res.status(404).json({
             status: "fail",
-            message: "This email dose NOT exist"
+            message: "This username dose NOT exist"
         });
     }
     res.status(200).json({
@@ -58,8 +58,24 @@ exports.getPredictionByEmail = async (req, res) => {
 }
 
 exports.createPrediction = async (req, res) => {
-    let { email, places, accuracy } = req.body;
+    let { user, places, accuracy } = req.body;
 
+    if (!user || typeof user != "object") {
+        return res.status(400).json({
+            status: "fail",
+            message: "Invalid user"
+        });
+    }
+
+    const { username, email } = user;
+
+    if (!username) {
+        return res.status(400).json({
+            status: "fail",
+            message: "Invalid username"
+        });
+    }
+    console.log(email);
     if (!email || !isValidEmail(email)) {
         return res.status(400).json({
             status: "fail",
@@ -67,14 +83,19 @@ exports.createPrediction = async (req, res) => {
         });
     }
 
-    if (!places || !places.quarter || !Array.isArray(places.quarter) || places.quarter.length != 8 || !places.semi || !Array.isArray(places.semi) || places.semi.length != 4 || !places.final || !Array.isArray(places.final) || places.final.length != 2 || !places.winner || !Array.isArray(places.winner) || places.winner.length != 1) {
+    if (
+        !places || !places.quarter || !Array.isArray(places.quarter) || places.quarter.length != 8 ||
+        !places.semi || !Array.isArray(places.semi) || places.semi.length != 4 ||
+        !places.final || !Array.isArray(places.final) || places.final.length != 2 ||
+        !places.winner || !Array.isArray(places.winner) || places.winner.length != 1
+    ) {
         return res.status(400).json({
             status: "fail",
             message: "You must fill all places"
         });
     }
 
-    const docRef = doc(db, 'predictions', email);
+    const docRef = doc(db, 'predictions', username);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
         return res.status(400).json({
@@ -86,12 +107,13 @@ exports.createPrediction = async (req, res) => {
         accuracy = null;
     }
     const newPrediction = {
+        user,
         places,
         accuracy,
         timestamp: Date.now(),
     };
 
-    await setDoc(doc(db, "predictions", email), newPrediction);
+    await setDoc(doc(db, "predictions", username), newPrediction);
 
     res.status(201).json({
         status: 'success',
