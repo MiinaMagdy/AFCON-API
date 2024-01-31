@@ -1,5 +1,5 @@
 const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, getDoc, doc, getDocs, setDoc } = require('firebase/firestore');
+const { getFirestore, collection, getDoc, doc, getDocs, setDoc, arrayRemove } = require('firebase/firestore');
 const { isValidEmail } = require("../utils/validEmail");
 
 const firebaseConfig = {
@@ -67,7 +67,16 @@ exports.createPrediction = async (req, res) => {
         });
     }
 
-    if (!places || !places.quarter || places.quarter.length != 8 || !places.semi || places.semi.length != 4 || !places.final || places.final.length != 2 || !places.winner) {
+    for (key in places) {
+        if (!Array.isArray(key)) {
+            return res.status(400).json({
+                status: "fail",
+                message: "all keys in places must be array"
+            });
+        }
+    }
+
+    if (!places || !places.quarter || places.quarter.length != 8 || !places.semi || places.semi.length != 4 || !places.final || places.final.length != 2 || !places.winner || places.winner.length != 1) {
         return res.status(400).json({
             status: "fail",
             message: "You must fill all places"
