@@ -82,7 +82,9 @@ exports.createPrediction = async (req, res) => {
             message: "This email already exists!"
         });
     }
-
+    if (accuracy == undefined) {
+        accuracy = null;
+    }
     const newPrediction = {
         places,
         accuracy,
