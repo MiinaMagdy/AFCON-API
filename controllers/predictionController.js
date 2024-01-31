@@ -1,5 +1,6 @@
 const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, getDoc, doc, getDocs, setDoc } = require('firebase/firestore')
+const { getFirestore, collection, getDoc, doc, getDocs, setDoc } = require('firebase/firestore');
+const { isValidEmail } = require("../utils/validEmail");
 
 const firebaseConfig = {
     apiKey: "AIzaSyCSo6AxOJ7abnieJD_RYu4cBqsFk1fXfJ4",
@@ -17,7 +18,7 @@ exports.getAllPredictions = async (req, res) => {
     const predictionsSnap = await getDocs(collection(db, "predictions"));
     const predictions = []
     predictionsSnap.forEach((doc) => {
-        predictions.push({ username: doc.id, ...doc.data() });
+        predictions.push({ email: doc.id, ...doc.data() });
     });
     if (!predictions.length) {
         return res.status(404).json({
@@ -33,13 +34,19 @@ exports.getAllPredictions = async (req, res) => {
     });
 }
 
-exports.getPredictionByUsername = async (req, res) => {
-    const userRef = doc(db, 'predictions', req.params.username);
+exports.getPredictionByEmail = async (req, res) => {
+    if (!req.params.email || !isValidEmail(req.params.email)) {
+        return res.status(400).json({
+            status: "fail",
+            message: "Invalid email"
+        });
+    }
+    const userRef = doc(db, 'predictions', req.params.email);
     const predictionSnap = await getDoc(userRef);
     if (!predictionSnap.exists()) {
         return res.status(404).json({
             status: "fail",
-            message: "This username dose NOT exist"
+            message: "This email dose NOT exist"
         });
     }
     res.status(200).json({
@@ -51,12 +58,12 @@ exports.getPredictionByUsername = async (req, res) => {
 }
 
 exports.createPrediction = async (req, res) => {
-    const { username, places, accuracy } = req.body;
+    const { email, places, accuracy } = req.body;
 
-    if (!username) {
+    if (!email || !isValidEmail(email)) {
         return res.status(400).json({
             status: "fail",
-            message: "You must write a unique username!"
+            message: "Invalid email"
         });
     }
 
@@ -67,12 +74,12 @@ exports.createPrediction = async (req, res) => {
         });
     }
 
-    const docRef = doc(db, 'predictions', username);
+    const docRef = doc(db, 'predictions', email);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
         return res.status(400).json({
             status: "fail",
-            message: "This username already exists!"
+            message: "This email already exists!"
         });
     }
 
@@ -82,7 +89,7 @@ exports.createPrediction = async (req, res) => {
         timestamp: Date.now(),
     };
 
-    await setDoc(doc(db, "predictions", username), newPrediction);
+    await setDoc(doc(db, "predictions", email), newPrediction);
 
     res.status(201).json({
         status: 'success',

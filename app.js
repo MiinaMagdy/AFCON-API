@@ -2,6 +2,7 @@
 
 // import third-party 
 const express = require('express');
+const cors = require("cors")
 
 // import local files
 const predictionRouter = require('./routers/predictionRoutes');
@@ -11,6 +12,9 @@ const app = express();
 
 // Middlewares
 app.use(express.json());
+app.use(cors({
+    origin: ['http://localhost:5173/']
+}));
 
 // Routers
 app.use('/api/v1/predictions', predictionRouter);
