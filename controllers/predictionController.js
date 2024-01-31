@@ -67,7 +67,7 @@ exports.createPrediction = async (req, res) => {
         });
     }
 
-    if (!places || !places.quarter || places.quarter.length != 8 || !places.semi || places.semi.length != 4 || !places.final || places.final.length != 4) {
+    if (!places || !places.quarter || places.quarter.length != 8 || !places.semi || places.semi.length != 4 || !places.final || places.final.length != 2 || !places.winner) {
         return res.status(400).json({
             status: "fail",
             message: "You must fill all places"
