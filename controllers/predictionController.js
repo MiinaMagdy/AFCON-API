@@ -58,7 +58,7 @@ exports.getPredictionByEmail = async (req, res) => {
 }
 
 exports.createPrediction = async (req, res) => {
-    const { email, places, accuracy } = req.body;
+    let { email, places, accuracy } = req.body;
 
     if (!email || !isValidEmail(email)) {
         return res.status(400).json({
