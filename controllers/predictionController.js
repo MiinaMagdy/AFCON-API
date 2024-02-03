@@ -7,7 +7,9 @@ const {
     getDocs,
     setDoc,
 } = require('firebase/firestore');
+
 const { isValidEmail } = require('../utils/validEmail');
+const { calcAccuracy } = require('../utils/calcAccuracy');
 
 const firebaseConfig = {
     apiKey: 'AIzaSyCSo6AxOJ7abnieJD_RYu4cBqsFk1fXfJ4',
@@ -24,8 +26,16 @@ const db = getFirestore(firebaseApp);
 exports.getAllPredictions = async (req, res) => {
     const predictionsSnap = await getDocs(collection(db, 'predictions'));
     const predictions = [];
-    predictionsSnap.forEach((doc) => {
-        predictions.push({ email: doc.id, ...doc.data() });
+    predictionsSnap.forEach(async (doc) => {
+        let { accuracy, places } = doc.data();
+        if (accuracy === null) {
+            accuracy = calcAccuracy(places);
+            await setDoc(doc.ref, {
+                ...doc.data(),
+                accuracy
+            })
+        }
+        predictions.push({ email: doc.id, ...doc.data(), accuracy });
     });
     if (!predictions.length) {
         return res.status(404).json({
@@ -57,10 +67,23 @@ exports.getPredictionByEmail = async (req, res) => {
             message: 'This username dose NOT exist',
         });
     }
+
+    let { accuracy, places } = predictionSnap.data();
+    if (accuracy === null) {
+        accuracy = calcAccuracy(places);
+        await setDoc(userRef, {
+            ...predictionSnap.data(),
+            accuracy,
+        })
+    }
+
     res.status(200).json({
         status: 'success',
         data: {
-            prediction: predictionSnap.data(),
+            prediction: {
+                ...predictionSnap.data(),
+                accuracy
+            },
         },
     });
 };
@@ -91,24 +114,10 @@ exports.createPrediction = async (req, res) => {
         });
     }
 
-    if (
-        !places ||
-        !places.quarter ||
-        !Array.isArray(places.quarter) ||
-        places.quarter.length != 8 ||
-        !places.semi ||
-        !Array.isArray(places.semi) ||
-        places.semi.length != 4 ||
-        !places.final ||
-        !Array.isArray(places.final) ||
-        places.final.length != 2 ||
-        !places.winner ||
-        !Array.isArray(places.winner) ||
-        places.winner.length != 1
-    ) {
+    if (!places) {
         return res.status(400).json({
             status: 'fail',
-            message: 'You must fill all places',
+            message: 'No places are given',
         });
     }
 
@@ -121,9 +130,8 @@ exports.createPrediction = async (req, res) => {
         });
     }
 
-    if (accuracy == undefined) {
-        accuracy = null;
-    }
+    accuracy = null;
+
     const newPrediction = {
         username,
         places,
