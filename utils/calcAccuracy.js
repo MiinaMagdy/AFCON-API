@@ -1,8 +1,8 @@
 exports.calcAccuracy = (predPlaces) => {
     const finalPlaces = {
-        semi: ['NGA', 'COD', 'CPV', 'CIV'],
-        final: ['CPV', 'NGA'],
-        winner: ['NGA']
+        semi: ['NGA', 'ZAF', 'COD', 'CIV'],
+        final: ['NGA', 'CIV'],
+        winner: ['CIV'],
     };
     accuracy = 0;
     total = 0;
@@ -11,8 +11,8 @@ exports.calcAccuracy = (predPlaces) => {
             if (finalPlaces[round].indexOf(pred) != -1) {
                 accuracy++;
             }
-            total++;
         }
+        total += finalPlaces[round].length;
     }
     return Math.round((accuracy / total) * 10000) / 100;
-}
+};

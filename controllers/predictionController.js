@@ -26,17 +26,17 @@ const db = getFirestore(firebaseApp);
 exports.getAllPredictions = async (req, res) => {
     const predictionsSnap = await getDocs(collection(db, 'predictions'));
     const predictions = [];
-    predictionsSnap.forEach(async (doc) => {
+    for (let doc of predictionsSnap.docs) {
         let { accuracy, places } = doc.data();
         if (accuracy === null) {
             accuracy = calcAccuracy(places);
             await setDoc(doc.ref, {
                 ...doc.data(),
-                accuracy
-            })
+                accuracy,
+            });
         }
         predictions.push({ email: doc.id, ...doc.data(), accuracy });
-    });
+    }
     if (!predictions.length) {
         return res.status(404).json({
             status: 'fail',
@@ -74,7 +74,7 @@ exports.getPredictionByEmail = async (req, res) => {
         await setDoc(userRef, {
             ...predictionSnap.data(),
             accuracy,
-        })
+        });
     }
 
     res.status(200).json({
@@ -82,7 +82,7 @@ exports.getPredictionByEmail = async (req, res) => {
         data: {
             prediction: {
                 ...predictionSnap.data(),
-                accuracy
+                accuracy,
             },
         },
     });
@@ -106,7 +106,6 @@ exports.createPrediction = async (req, res) => {
             message: 'Invalid username',
         });
     }
-    console.log(email);
     if (!email || !isValidEmail(email)) {
         return res.status(400).json({
             status: 'fail',
